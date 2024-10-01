@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "608978522646",
+    "project_id": "farmos-trade-seller",
+    "storage_bucket": "farmos-trade-seller.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:608978522646:android:4b536ac13a0adb9eb3db37",
+        "android_client_info": {
+          "package_name": "com.example.trade_seller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAavkixSUfXfqSFjdEW5TrkQN5ft1DPXdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:608978522646:android:bee047998e169bccb3db37",
+        "android_client_info": {
+          "package_name": "in.farmos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAavkixSUfXfqSFjdEW5TrkQN5ft1DPXdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
