@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:trade_seller/home.dart';
@@ -12,22 +13,32 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool _isSignIn = true; // To toggle between sign-in and sign-up
 
+  // Firebase Auth instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   // Controllers for Sign In
-  final TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   // Controllers for Sign Up
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _signUpPhoneNumberController =
+  final TextEditingController _signUpEmailController = TextEditingController();
+  final TextEditingController _signUpPasswordController =
       TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _phoneNumberController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
+    _signUpEmailController.dispose();
+    _signUpPasswordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
-    _signUpPhoneNumberController.dispose();
     _locationController.dispose();
     super.dispose();
   }
@@ -38,24 +49,75 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
-  void _signIn() {
-    // Handle Sign In logic here
-    final phoneNumber = _phoneNumberController.text;
-    final password = _passwordController.text;
-    print('Signing in with Phone: $phoneNumber, Password: $password');
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => MyHomePage()));
-    // Add your sign-in logic (like API calls) here
+  Future<void> _signIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      print('Please enter valid credentials');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Firebase sign-in with email and password
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => MyHomePage()));
+    } on FirebaseAuthException catch (e) {
+      print('Sign-in failed: ${e.message}');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
-  void _signUp() {
-    // Handle Sign Up logic here
-    final name = _nameController.text;
-    final phoneNumber = _signUpPhoneNumberController.text;
-    final location = _locationController.text;
-    print(
-        'Signing up with Name: $name, Phone: $phoneNumber, Location: $location');
-    // Add your sign-up logic (like API calls) here
+  Future<void> _signUp() async {
+    final email = _signUpEmailController.text.trim();
+    final password = _signUpPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+    final name = _nameController.text.trim();
+    final location = _locationController.text.trim();
+
+    if (email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty ||
+        name.isEmpty ||
+        location.isEmpty) {
+      print('Please fill all fields');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      print('Passwords do not match');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Firebase sign-up with email and password
+      await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
+
+      print('Signed up with Email: $email, Name: $name, Location: $location');
+
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => MyHomePage()));
+    } on FirebaseAuthException catch (e) {
+      print('Sign-up failed: ${e.message}');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -69,45 +131,45 @@ class _AuthScreenState extends State<AuthScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextButton(
-              onPressed: () => FirebaseCrashlytics.instance.crash(),
-              child: Text("Force Crash (for testing)"),
-            ),
-            // Toggle between Sign In and Sign Up
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton.icon(
-                  onPressed: _toggleForm,
-                  icon: Icon(
-                    _isSignIn ? Icons.person_add : Icons.login,
-                    color: Colors.blue,
+            if (_isLoading) CircularProgressIndicator(),
+            if (!_isLoading) ...[
+              TextButton(
+                onPressed: () => FirebaseCrashlytics.instance.crash(),
+                child: Text("Force Crash (for testing)"),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: _toggleForm,
+                    icon: Icon(
+                      _isSignIn ? Icons.person_add : Icons.login,
+                      color: Colors.blue,
+                    ),
+                    label: Text(
+                      _isSignIn ? 'Switch to Sign Up' : 'Switch to Sign In',
+                      style: TextStyle(color: Colors.blue),
+                    ),
                   ),
-                  label: Text(
-                    _isSignIn ? 'Switch to Sign Up' : 'Switch to Sign In',
-                    style: TextStyle(color: Colors.blue),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // Conditionally render the Sign In or Sign Up form
-            _isSignIn ? _buildSignInForm() : _buildSignUpForm(),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _isSignIn ? _buildSignInForm() : _buildSignUpForm(),
+            ],
           ],
         ),
       ),
     );
   }
 
-  // Build Sign In form
   Widget _buildSignInForm() {
     return Column(
       children: [
         TextField(
-          controller: _phoneNumberController,
-          keyboardType: TextInputType.phone,
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
-            labelText: 'Phone Number',
+            labelText: 'Email',
             border: OutlineInputBorder(),
           ),
         ),
@@ -129,7 +191,6 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  // Build Sign Up form
   Widget _buildSignUpForm() {
     return Column(
       children: [
@@ -142,10 +203,28 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(height: 16),
         TextField(
-          controller: _signUpPhoneNumberController,
-          keyboardType: TextInputType.phone,
+          controller: _signUpEmailController,
+          keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
-            labelText: 'Phone Number',
+            labelText: 'Email',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _signUpPasswordController,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: 'Password',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _confirmPasswordController,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: 'Confirm Password',
             border: OutlineInputBorder(),
           ),
         ),

@@ -1,7 +1,10 @@
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:trade_seller/add_details.dart';
+import 'package:trade_seller/auth.dart';
 import 'package:trade_seller/item_widget.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -36,6 +39,48 @@ class _MyHomePageState extends State<MyHomePage> {
         _items.add(newItem);
         _filteredItems.add(newItem);
       });
+
+      // Save the item to Firebase
+      await _uploadItemToFirebase(newItem);
+    }
+  }
+
+  Future<void> _uploadItemToFirebase(Item item) async {
+    try {
+      // Upload images to Firebase Storage and get their URLs
+      List<String> imageUrls = [];
+      for (var imageFile in item.images) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('item_images/${DateTime.now().millisecondsSinceEpoch}');
+        final uploadTask = storageRef.putFile(imageFile);
+        final snapshot = await uploadTask;
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        imageUrls.add(downloadUrl);
+      }
+
+      // Create a new item with the image URLs
+      Item updatedItem = item.copyWith(imageUrls: imageUrls);
+
+      // Save item details to Firestore
+      await FirebaseFirestore.instance
+          .collection('sell_items')
+          .add(updatedItem.toMap());
+      print('Item added successfully!');
+    } catch (error) {
+      print('Failed to add item: $error');
+    }
+  }
+
+  // Fetch items from Firestore and convert to a list of Item objects
+  Future<List<Item>> _fetchItemsFromFirebase() async {
+    try {
+      final querySnapshot =
+          await FirebaseFirestore.instance.collection('items').get();
+      return querySnapshot.docs.map((doc) => Item.fromMap(doc.data())).toList();
+    } catch (error) {
+      print('Failed to fetch items: $error');
+      return [];
     }
   }
 
@@ -106,6 +151,18 @@ class _MyHomePageState extends State<MyHomePage> {
                   _filteredItems.addAll(_items);
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut(); // Firebase sign-out
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        AuthScreen()), // Navigate back to AuthScreen
+              );
             },
           ),
         ],
