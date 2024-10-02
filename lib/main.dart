@@ -1,6 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:trade_seller/auth.dart';
+import 'package:trade_seller/login.dart';
 import 'package:trade_seller/constants/colors.dart';
 import 'package:trade_seller/home.dart';
 import 'package:trade_seller/splash_screen.dart';

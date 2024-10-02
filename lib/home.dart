@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:trade_seller/add_details.dart';
-import 'package:trade_seller/auth.dart';
+import 'package:trade_seller/login.dart';
 import 'package:trade_seller/item_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -23,6 +23,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    _fetchItems();
     _filteredItems.addAll(_items); // Initially show all items
   }
 
@@ -72,15 +73,27 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // Fetch items from Firestore and convert to a list of Item objects
-  Future<List<Item>> _fetchItemsFromFirebase() async {
+  Future<void> _fetchItems() async {
     try {
+      // Fetch items from Firestore
       final querySnapshot =
-          await FirebaseFirestore.instance.collection('items').get();
-      return querySnapshot.docs.map((doc) => Item.fromMap(doc.data())).toList();
+          await FirebaseFirestore.instance.collection('sell_items').get();
+
+      final items = querySnapshot.docs
+          .map(
+              (doc) => Item.fromMap(doc.data(), doc.id)) // Pass the document ID
+          .toList();
+
+      setState(() {
+        _items.clear(); // Clear any existing items
+        _items.addAll(items); // Add fetched items to the list
+        _filteredItems.clear();
+        _filteredItems.addAll(_items); // Update filtered items as well
+      });
+
+      print('Items fetched successfully from Firebase!');
     } catch (error) {
       print('Failed to fetch items: $error');
-      return [];
     }
   }
 
@@ -99,6 +112,40 @@ class _MyHomePageState extends State<MyHomePage> {
         _items[index] = updatedItem;
         _filteredItems[index] = updatedItem;
       });
+
+      // Update item details in Firestore using the item ID
+      await _updateItemInFirebase(updatedItem, _items[index].id);
+    }
+  }
+
+  Future<void> _updateItemInFirebase(Item item, String itemId) async {
+    try {
+      // Upload newly added images to Firebase Storage and get their URLs
+      List<String> imageUrls = item.imageUrls; // Include existing URLs
+
+      for (var imageFile in item.images) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('item_images/${DateTime.now().millisecondsSinceEpoch}');
+        final uploadTask = storageRef.putFile(imageFile);
+        final snapshot = await uploadTask;
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        imageUrls.add(downloadUrl);
+      }
+
+      // Update item details in Firestore
+      await FirebaseFirestore.instance
+          .collection('sell_items')
+          .doc(itemId)
+          .update({
+        'name': item.name,
+        'price': item.price,
+        'quantity': item.quantity,
+        'imageUrls': imageUrls,
+      });
+      print('Item updated successfully!');
+    } catch (error) {
+      print('Failed to update item: $error');
     }
   }
 
@@ -219,29 +266,95 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       );
     }
-    return ListTileTheme(
-      child: ListView.builder(
-        itemCount: _filteredItems.length,
-        itemBuilder: (context, index) {
-          final item = _filteredItems[index];
-          return ListTile(
-            title: Text(item.name),
-            subtitle: Text('Price: \$${item.price.toStringAsFixed(2)}'),
-            trailing: Text('Quantity: ${item.quantity}'),
-            onTap: () {
-              _editItem(index);
-            },
-            leading: item.images.isNotEmpty
-                ? Image.file(
-                    item.images.first,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                  )
-                : const Icon(Icons.image),
-          );
-        },
-      ),
+
+    return ListView.builder(
+      itemCount: _filteredItems.length,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      itemBuilder: (context, index) {
+        final item = _filteredItems[index];
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(10),
+              leading: item.imageUrls.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        item.imageUrls.first,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.error, color: Colors.red),
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return const SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        },
+                      ),
+                    )
+                  : Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.image,
+                        color: Colors.grey,
+                      ),
+                    ),
+              title: Text(
+                item.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 5),
+                  Text(
+                    'Price: \$${item.price.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  Text(
+                    'Quantity: ${item.quantity}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                onPressed: () {
+                  _editItem(index);
+                },
+              ),
+              onTap: () {
+                _editItem(index);
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
