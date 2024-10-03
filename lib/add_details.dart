@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:trade_seller/constants/colors.dart';
 import 'package:trade_seller/item_widget.dart';
 
 class AddDetails extends StatefulWidget {
@@ -78,6 +78,7 @@ class _AddDetailsState extends State<AddDetails> {
         quantity: itemQuantity,
         images: selectedImages,
         imageUrls: existingImageUrls,
+        timestamp: Timestamp.fromDate(DateTime.now()),
       );
       Navigator.pop(context, newItem);
     } else {

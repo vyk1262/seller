@@ -37,8 +37,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (newItem != null) {
       setState(() {
-        _items.add(newItem);
-        _filteredItems.add(newItem);
+        _items.insert(0, newItem);
+        _filteredItems.insert(0, newItem);
       });
 
       // Save the item to Firebase
@@ -83,6 +83,8 @@ class _MyHomePageState extends State<MyHomePage> {
           .map(
               (doc) => Item.fromMap(doc.data(), doc.id)) // Pass the document ID
           .toList();
+
+      items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       setState(() {
         _items.clear(); // Clear any existing items
@@ -169,6 +171,16 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       }
     });
+  }
+
+  String formatDateTime(DateTime dateTime) {
+    String year = dateTime.year.toString();
+    String month = dateTime.month.toString().padLeft(2, '0');
+    String day = dateTime.day.toString().padLeft(2, '0');
+    String hour = dateTime.hour.toString().padLeft(2, '0');
+    String minute = dateTime.minute.toString().padLeft(2, '0');
+
+    return '$year-$month-$day $hour:$minute';
   }
 
   @override
@@ -291,6 +303,7 @@ class _MyHomePageState extends State<MyHomePage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       itemBuilder: (context, index) {
         final item = _filteredItems[index];
+        final String formattedDate = formatDateTime(item.timestamp.toDate());
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 5),
@@ -357,6 +370,13 @@ class _MyHomePageState extends State<MyHomePage> {
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[700],
+                    ),
+                  ),
+                  Text(
+                    'Date: $formattedDate', // Show the formatted timestamp
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
                     ),
                   ),
                 ],
