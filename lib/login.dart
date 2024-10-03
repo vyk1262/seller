@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -24,6 +25,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
 
   bool _isLoading = false;
@@ -36,6 +38,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _signUpPasswordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
+    _mobileController.dispose();
     _locationController.dispose();
     super.dispose();
   }
@@ -93,12 +96,14 @@ class _AuthScreenState extends State<AuthScreen> {
     final password = _signUpPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
     final name = _nameController.text.trim();
+    final mobile = _mobileController.text.trim();
     final location = _locationController.text.trim();
 
     if (email.isEmpty ||
         password.isEmpty ||
         confirmPassword.isEmpty ||
         name.isEmpty ||
+        mobile.isEmpty ||
         location.isEmpty) {
       _showErrorDialog('Please fill all fields');
       return;
@@ -114,10 +119,28 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
-      await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
+      // Create the user with email and password
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      User? user = userCredential.user;
+
+      // Store additional details in Firestore
+      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
+        'name': name,
+        'email': email,
+        'mobile': mobile,
+        'location': location,
+        'createdAt': Timestamp.now(),
+      });
+
+      // Navigate to the home page
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => MyHomePage()));
+        context,
+        MaterialPageRoute(builder: (context) => MyHomePage()),
+      );
     } on FirebaseAuthException catch (e) {
       _showErrorDialog('Sign-up failed: ${e.message}');
     } finally {
@@ -206,18 +229,6 @@ class _AuthScreenState extends State<AuthScreen> {
           onPressed: _signIn,
           child: const Text('Sign In', style: TextStyle(fontSize: 16)),
         ),
-        // ElevatedButton(
-        //   style: ElevatedButton.styleFrom(
-        //     backgroundColor: Colors.white,
-        //     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        //     side: const BorderSide(color: Colors.deepPurple),
-        //   ),
-        //   onPressed: _signInWithGoogle,
-        //   child: const Text(
-        //     'Continue with Google',
-        //     style: TextStyle(color: Colors.deepPurple, fontSize: 16),
-        //   ),
-        // ),
       ],
     );
   }
@@ -231,6 +242,15 @@ class _AuthScreenState extends State<AuthScreen> {
             labelText: 'Name',
             border: OutlineInputBorder(),
             prefixIcon: Icon(Icons.person),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _mobileController,
+          decoration: const InputDecoration(
+            labelText: 'Mobile Number',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.phone),
           ),
         ),
         const SizedBox(height: 16),
@@ -283,43 +303,5 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ],
     );
-  }
-
-  Future<void> _signInWithGoogle() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Initialize Google Sign-In
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      if (googleUser == null) {
-        // The user canceled the sign-in
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await _auth.signInWithCredential(credential);
-
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => MyHomePage()));
-    } on FirebaseAuthException catch (e) {
-      _showErrorDialog('Google Sign-In failed: ${e.message}');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 }
