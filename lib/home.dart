@@ -176,7 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: !_isSearching
-            ? Text(_selectedIndex == 0 ? "Dashboard" : "Buyers")
+            ? Text(_selectedIndex == 0 ? "Demands" : "My Products")
             : TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -214,8 +214,8 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: (_selectedIndex == 0) ? _buildItemList() : _buildBuyersList(),
-      floatingActionButton: (_selectedIndex == 0)
+      body: (_selectedIndex == 0) ? _buildBuyersList() : _buildItemList(),
+      floatingActionButton: (_selectedIndex == 1)
           ? FloatingActionButton(
               onPressed: _addItem,
               tooltip: 'Add Item',
@@ -223,19 +223,38 @@ class _MyHomePageState extends State<MyHomePage> {
             )
           : null,
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: _buildIcon(Icons.shopping_cart, 0),
+            label: 'Demands',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Buyers',
+            icon: _buildIcon(Icons.dashboard, 1),
+            label: 'My Products',
           ),
         ],
         currentIndex: _selectedIndex,
+        backgroundColor: Colors.white,
         selectedItemColor: Colors.deepPurple,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
         onTap: (int index) => setState(() => _selectedIndex = index),
+        type: BottomNavigationBarType.fixed,
+        elevation: 10.0,
+      ),
+    );
+  }
+
+  Widget _buildIcon(IconData iconData, int index) {
+    bool isSelected = _selectedIndex == index;
+    return CircleAvatar(
+      radius: isSelected ? 24 : 20, // Larger size when selected
+      backgroundColor:
+          isSelected ? Colors.deepPurple.withOpacity(0.2) : Colors.transparent,
+      child: Icon(
+        iconData,
+        size: 28,
+        color: isSelected ? Colors.deepPurple : Colors.grey,
       ),
     );
   }
@@ -287,24 +306,24 @@ class _MyHomePageState extends State<MyHomePage> {
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
                         item.imageUrls.first,
-                        width: 60,
-                        height: 60,
+                        width: 80,
+                        height: 80,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             const Icon(Icons.error, color: Colors.red),
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
                           return const SizedBox(
-                            width: 60,
-                            height: 60,
+                            width: 80,
+                            height: 80,
                             child: Center(child: CircularProgressIndicator()),
                           );
                         },
                       ),
                     )
                   : Container(
-                      width: 60,
-                      height: 60,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
                         borderRadius: BorderRadius.circular(10),

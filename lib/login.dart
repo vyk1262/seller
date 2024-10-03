@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:trade_seller/constants/colors.dart';
 import 'package:trade_seller/home.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -128,7 +129,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBackground,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
