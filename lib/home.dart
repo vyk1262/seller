@@ -5,6 +5,7 @@ import 'package:trade_seller/add_details.dart';
 import 'package:trade_seller/login.dart';
 import 'package:trade_seller/item_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:trade_seller/profile.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -210,6 +211,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   _filteredItems.addAll(_items);
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.person),
+            onPressed: () async {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfileScreen()),
+              );
             },
           ),
           IconButton(

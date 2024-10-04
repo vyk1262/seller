@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:trade_seller/constants/colors.dart';
 import 'package:trade_seller/home.dart';
 
@@ -19,14 +18,6 @@ class _AuthScreenState extends State<AuthScreen> {
   // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _signUpEmailController = TextEditingController();
-  final TextEditingController _signUpPasswordController =
-      TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _mobileController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -34,12 +25,6 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _signUpEmailController.dispose();
-    _signUpPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    _nameController.dispose();
-    _mobileController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
@@ -92,25 +77,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _signUp() async {
-    final email = _signUpEmailController.text.trim();
-    final password = _signUpPasswordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-    final name = _nameController.text.trim();
-    final mobile = _mobileController.text.trim();
-    final location = _locationController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-    if (email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty ||
-        name.isEmpty ||
-        mobile.isEmpty ||
-        location.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       _showErrorDialog('Please fill all fields');
-      return;
-    }
-
-    if (password != confirmPassword) {
-      _showErrorDialog('Passwords do not match');
       return;
     }
 
@@ -129,10 +100,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       // Store additional details in Firestore
       await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
-        'name': name,
         'email': email,
-        'mobile': mobile,
-        'location': location,
         'createdAt': Timestamp.now(),
       });
 
@@ -237,25 +205,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return Column(
       children: [
         TextField(
-          controller: _nameController,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.person),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _mobileController,
-          decoration: const InputDecoration(
-            labelText: 'Mobile Number',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.phone),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _signUpEmailController,
+          controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Email',
@@ -265,31 +215,12 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
         const SizedBox(height: 16),
         TextField(
-          controller: _signUpPasswordController,
+          controller: _passwordController,
           obscureText: true,
           decoration: const InputDecoration(
             labelText: 'Password',
             border: OutlineInputBorder(),
             prefixIcon: Icon(Icons.lock),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _confirmPasswordController,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Confirm Password',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.lock_outline),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _locationController,
-          decoration: const InputDecoration(
-            labelText: 'Location',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.location_on),
           ),
         ),
         const SizedBox(height: 16),
