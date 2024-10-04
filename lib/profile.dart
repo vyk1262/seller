@@ -12,6 +12,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   DocumentSnapshot? _userData;
+  double _profileCompletion = 0.0; // Initialize profile completion to 0%
 
   bool _isEditing = false;
 
@@ -30,24 +31,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
       User? user = _auth.currentUser;
       if (user != null) {
         _emailController.text = user.email ?? '';
+
         final snapshot =
             await _firestore.collection('users').doc(user.uid).get();
         if (snapshot.exists) {
           _userData = snapshot;
-          _nameController.text = _userData?['name'] ?? '';
-          _phoneController.text = _userData?['phone'] ?? '';
+
+          Map<String, dynamic>? userData =
+              _userData?.data() as Map<String, dynamic>?;
+          _nameController.text =
+              userData != null && userData.containsKey('name')
+                  ? userData['name']
+                  : '';
+          _phoneController.text =
+              userData != null && userData.containsKey('phone')
+                  ? userData['phone']
+                  : '';
         } else {
           await _firestore.collection('users').doc(user.uid).set({
             'name': '',
             'phone': '',
           });
         }
+        _calculateProfileCompletion(); // Calculate completion after fetching data
       }
     } catch (e) {
       print('Error fetching user details: $e');
     } finally {
       setState(() {});
     }
+  }
+
+  void _calculateProfileCompletion() {
+    int totalFields = 3; // Assuming 3 fields (email is pre-filled)
+    int filledFields = 1; // email is pre-filled
+    if (_nameController.text.isNotEmpty) filledFields++;
+    if (_phoneController.text.isNotEmpty) filledFields++;
+
+    _profileCompletion = (filledFields / totalFields) * 100.0;
+    setState(() {});
   }
 
   Future<void> _saveUserDetails() async {
@@ -60,6 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }, SetOptions(merge: true)); // Merge: update only provided fields
         setState(() {
           _isEditing = false;
+          _calculateProfileCompletion(); // Recalculate completion after saving
         });
       }
     } catch (e) {
@@ -81,6 +104,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       return Column(
         children: [
+          // Display profile completion percentage
+          Text(
+            'Profile Completion: ${_profileCompletion.toStringAsFixed(1)}%',
+            style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16.0),
           TextField(
             controller: _emailController,
             readOnly: true,
