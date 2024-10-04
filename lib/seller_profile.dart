@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:trade_seller/constants/colors.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -157,10 +156,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: AppColors.primary,
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.check : Icons.edit),

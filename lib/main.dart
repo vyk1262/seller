@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:trade_seller/login.dart';
+import 'package:trade_seller/seller_login.dart';
 import 'package:trade_seller/constants/colors.dart';
-import 'package:trade_seller/home.dart';
+import 'package:trade_seller/seller_home.dart';
 import 'package:trade_seller/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';

@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:trade_seller/add_details.dart';
-import 'package:trade_seller/login.dart';
-import 'package:trade_seller/item_widget.dart';
+import 'package:trade_seller/seller_add_details.dart';
+import 'package:trade_seller/seller_login.dart';
+import 'package:trade_seller/seller_item_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trade_seller/profile.dart';
+import 'package:trade_seller/seller_profile.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});

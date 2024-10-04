@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:trade_seller/item_widget.dart';
+import 'package:trade_seller/seller_item_widget.dart';
 
 class AddDetails extends StatefulWidget {
   final Item? item;
