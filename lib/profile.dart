@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:trade_seller/constants/colors.dart';
-import 'package:trade_seller/home.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -12,14 +11,13 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  DocumentSnapshot? userData;
+  DocumentSnapshot? _userData;
 
   bool _isEditing = false;
 
-  // Controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void initState() {
@@ -28,27 +26,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _fetchUserDetails() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      userData = await _firestore.collection('users').doc(user.uid).get();
-      _nameController.text = userData!['name'] ?? '';
-      _emailController.text = userData!['email'] ?? '';
-      _locationController.text = userData!['location'] ?? '';
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        _emailController.text = user.email ?? '';
+        final snapshot =
+            await _firestore.collection('users').doc(user.uid).get();
+        if (snapshot.exists) {
+          _userData = snapshot;
+          _nameController.text = _userData?['name'] ?? '';
+          _phoneController.text = _userData?['phone'] ?? '';
+        } else {
+          await _firestore.collection('users').doc(user.uid).set({
+            'name': '',
+            'phone': '',
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+    } finally {
       setState(() {});
     }
   }
 
   Future<void> _saveUserDetails() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      await _firestore.collection('users').doc(user.uid).update({
-        'name': _nameController.text,
-        'email': _emailController.text,
-        'location': _locationController.text,
-      });
-      setState(() {
-        _isEditing = false;
-      });
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).set({
+          'name': _nameController.text,
+          'phone': _phoneController.text,
+        }, SetOptions(merge: true)); // Merge: update only provided fields
+        setState(() {
+          _isEditing = false;
+        });
+      }
+    } catch (e) {
+      print('Error saving user details: $e');
     }
   }
 
@@ -56,8 +71,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _locationController.dispose();
+    _phoneController.dispose();
     super.dispose();
+  }
+
+  Widget _buildUserDetailsContent() {
+    if (_userData == null) {
+      return const Center(child: CircularProgressIndicator());
+    } else {
+      return Column(
+        children: [
+          TextField(
+            controller: _emailController,
+            readOnly: true,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            readOnly: !_isEditing,
+            decoration: InputDecoration(
+              labelText: 'Name',
+              border: const OutlineInputBorder(),
+              suffixIcon: _isEditing ? const Icon(Icons.edit) : null,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            readOnly: !_isEditing,
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              border: const OutlineInputBorder(),
+              suffixIcon: _isEditing ? const Icon(Icons.edit) : null,
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      );
+    }
   }
 
   @override
@@ -69,8 +125,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.primary,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(_isEditing ? Icons.check : Icons.edit),
             onPressed: () {
+              if (_isEditing) {
+                _saveUserDetails();
+              }
               setState(() {
                 _isEditing = !_isEditing;
               });
@@ -80,47 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: userData == null
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    readOnly: !_isEditing,
-                    decoration: InputDecoration(
-                      labelText: 'Name',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: _isEditing ? const Icon(Icons.edit) : null,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _emailController,
-                    readOnly: !_isEditing,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: _isEditing ? const Icon(Icons.edit) : null,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _locationController,
-                    readOnly: !_isEditing,
-                    decoration: InputDecoration(
-                      labelText: 'Location',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: _isEditing ? const Icon(Icons.edit) : null,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_isEditing)
-                    ElevatedButton(
-                      onPressed: _saveUserDetails,
-                      child: const Text('Save Changes'),
-                    ),
-                ],
-              ),
+        child: _buildUserDetailsContent(),
       ),
     );
   }
