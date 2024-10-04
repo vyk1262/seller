@@ -141,7 +141,7 @@ class _AuthScreenState extends State<AuthScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: Colors.deepPurple,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   side: const BorderSide(color: Colors.deepPurple),
@@ -265,7 +265,7 @@ class _AuthScreenState extends State<AuthScreen> {
       setState(() {
         _isLoading = true;
       });
-      // Initialize Google Sign-In
+
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
         // The user canceled the sign-in
@@ -274,15 +274,40 @@ class _AuthScreenState extends State<AuthScreen> {
         });
         return;
       }
+
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      await _auth.signInWithCredential(credential);
+
+      // Sign in with Google
+      UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (!userDoc.exists) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
+            'email': user.email,
+            'createdAt': Timestamp.now(),
+          });
+        }
+      }
+
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => MyHomePage()));
+        context,
+        MaterialPageRoute(builder: (context) => MyHomePage()),
+      );
     } on FirebaseAuthException catch (e) {
       _showErrorDialog('Google Sign-In failed: ${e.message}');
     } finally {
