@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:trade_seller/constants/colors.dart';
 import 'package:trade_seller/home.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -138,6 +139,29 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  side: const BorderSide(color: Colors.deepPurple),
+                ),
+                onPressed: _signInWithGoogle,
+                child: const Text(
+                  'Continue with Google',
+                  style: TextStyle(color: Colors.deepPurple, fontSize: 16),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'OR',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+              const SizedBox(height: 20),
               Card(
                 elevation: 5,
                 shape: RoundedRectangleBorder(
@@ -234,5 +258,37 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      // Initialize Google Sign-In
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        // The user canceled the sign-in
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await _auth.signInWithCredential(credential);
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => MyHomePage()));
+    } on FirebaseAuthException catch (e) {
+      _showErrorDialog('Google Sign-In failed: ${e.message}');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }
