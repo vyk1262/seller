@@ -109,6 +109,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Profile Completion: ${_profileCompletion.toStringAsFixed(1)}%',
             style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
           ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10.0),
+            child: LinearProgressIndicator(
+              value: _profileCompletion / 100.0,
+              valueColor: AlwaysStoppedAnimation(Colors.green), // Green color
+              backgroundColor: Colors.grey.shade200, // Light gray background
+              minHeight: 10.0, // Adjust height as needed
+            ),
+          ),
           const SizedBox(height: 16.0),
           TextField(
             controller: _emailController,
